@@ -74,30 +74,35 @@ def test(i):
 
   if not ps_cmd_compare_passed:
     print('ps command compare failed')
-    exit(0)
+    return False
 
   if len(output) != len(ref):
     print('case: ' + str(i) + ' length not equal:\n>>>output\n\u001b[31m' + '\n'.join(output) + '\n\u001b[0m<<<ref\n\u001b[32m' + '\n'.join(ref) + '\u001b[0m')
-    exit(0)
+    return False
   
   for (outputline, refline) in zip(output, ref):
     if outputline != refline and not is_only_pid_different(outputline, refline):
       print(f'case{i:02} diff:\n\tout: \u001b[31m{outputline}\u001b[0m\n\tref: \u001b[32m{refline}\u001b[0m')
-      exit(0)
+      return False
 
   print(f'test case {i:02} passed')
+  return True
 
 def main():
   parser = argparse.ArgumentParser(description='test tsh lab')
   parser.add_argument('--case', default=0, type=int, help='0 for all case, (default: 0)', choices=range(17))
   args = parser.parse_args()
+  all_passed = True
 
   if (args.case):
-    test(args.case)
+    all_passed &= test(args.case)
   else:
     # test all
     for i in range(1, 17):
-      test(i)
+      all_passed &= test(i)
+
+  if not all_passed:
+    exit(1)
 
 if __name__ == "__main__":
     main()
