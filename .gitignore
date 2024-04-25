@@ -1,0 +1,6 @@
+*.o
+shell/myint
+shell/myspin
+shell/mysplit
+shell/mystop
+shell/tsh
