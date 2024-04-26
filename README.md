@@ -7,3 +7,7 @@
 | 实验 | 目录 |
 | --- | --- |
 | shell lab | [shell](./shell) |
+
+## 实验文档
+* [文档源码](https://github.com/SEU-ICS/docs)
+* [在线查看](https://seu-ics.github.io/docs)
