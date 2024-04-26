@@ -182,11 +182,10 @@ void eval(char *cmdline)
 		return; /* Ignore empty lines */
 
 	if (!builtin_cmd(argv)) {
-		/* your code here */
-
 		sigset_t mask_all, mask_one, prev_one;
 
-		// Hint: block SIGCHLD before fork to avoid race condition
+		/* your code here */
+        // Hint: block SIGCHLD before fork to avoid race condition
 
 		if (0 /* Child runs user job, Hint: use Fork() */) {
 			// Hint: unblock SIGCHLD in child process
@@ -303,13 +302,13 @@ void do_bgfg(char **argv)
 	struct job_t *job;
 	int isForeground = !strcmp(argv[0], "fg");
 
-	/* your code here */
-
 	/* find the job according to pid or jobid */
 	if (argv[1][0] == '%') {
+        /* your code here */
 		// Hint: find job and pid according to jobid
 
 	} else {
+        /* your code here */
 		// Hint: find job according to pid
 	}
 
