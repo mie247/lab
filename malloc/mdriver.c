@@ -42,6 +42,9 @@
 /* Returns true if p is ALIGNMENT-byte aligned */
 #define IS_ALIGNED(p) ((((unsigned long)(p)) % ALIGNMENT) == 0)
 
+/* Print controlling */
+#define PRINTF(...) fprintf(outfd, __VA_ARGS__)
+
 /******************************
  * The key compound data types
  *****************************/
@@ -148,6 +151,10 @@ static char *default_tracefiles[] = {
 char status_msg[SUBMITR_MAXBUF]; /* submitr status messages */
 char autoresult[SUBMITR_MAXBUF]; /* autoresult string */
 
+/* If we only want to output the perf score */
+int only_output_perf_score = 0;
+FILE *outfd = NULL;
+
 /*********************
  * Function prototypes
  *********************/
@@ -218,7 +225,7 @@ static void run_tests(int num_tracefiles, const char *tracedir,
             mm_stats[i].valid = 0;
         } else {
             if (verbose > 1)
-                printf("Checking mm_malloc for correctness:\n");
+                PRINTF("Checking mm_malloc for correctness:\n");
             mm_stats[i].valid = eval_mm_valid(trace, &ranges);
 
             if (onetime_flag) {
@@ -228,12 +235,12 @@ static void run_tests(int num_tracefiles, const char *tracedir,
         }
         if (mm_stats[i].valid) {
             if (verbose > 1)
-                printf("\nefficiency:\n");
+                PRINTF("\nefficiency:\n");
             mm_stats[i].util = eval_mm_util(trace, i);
             speed_params->trace = trace;
             speed_params->ranges = ranges;
             if (verbose > 1)
-                printf("\nperformance:\n");
+                PRINTF("\nperformance:\n");
             mm_stats[i].secs = fsecs(eval_mm_speed, speed_params);
         }
         free_trace(trace);
@@ -268,7 +275,7 @@ int main(int argc, char **argv) {
     /*
 	 * Read and interpret the command line arguments
 	 */
-    while ((c = getopt(argc, argv, "d:f:c:s:t:v:hVAlD")) != EOF) {
+    while ((c = getopt(argc, argv, "d:f:c:s:t:v:hVAlDP")) != EOF) {
         switch (c) {
 
         case 'A': /* Hidden Autolab driver argument */
@@ -329,6 +336,10 @@ int main(int argc, char **argv) {
         case 'h': /* Print this message */
             usage();
             exit(0);
+        
+        case 'P':
+            only_output_perf_score = 1;
+            break;
 
         default:
             usage();
@@ -336,10 +347,12 @@ int main(int argc, char **argv) {
         }
     }
 
+    outfd = only_output_perf_score ? stderr : stdout;
+
     if (tracefiles == NULL) {
         tracefiles = default_tracefiles;
         num_tracefiles = sizeof(default_tracefiles) / sizeof(char *) - 1;
-        printf("Using default tracefiles in %s\n", tracedir);
+        PRINTF("Using default tracefiles in %s\n", tracedir);
     }
 
     if (debug_mode != DBG_NONE) {
@@ -360,7 +373,7 @@ int main(int argc, char **argv) {
 	 */
     if (run_libc) {
         if (verbose > 1)
-            printf("\nTesting libc malloc\n");
+            PRINTF("\nTesting libc malloc\n");
 
         /* Allocate libc stats array, with one stats_t struct per tracefile */
         libc_stats = (stats_t *)calloc(num_tracefiles, sizeof(stats_t));
@@ -372,12 +385,12 @@ int main(int argc, char **argv) {
             trace_t *trace = read_trace(&libc_stats[i], tracedir, tracefiles[i]);
 
             if (verbose > 1)
-                printf("Checking libc malloc for correctness, ");
+                PRINTF("Checking libc malloc for correctness, ");
             libc_stats[i].valid = eval_libc_valid(trace);
             if (libc_stats[i].valid) {
                 speed_params.trace = trace;
                 if (verbose > 1)
-                    printf("and performance.\n");
+                    PRINTF("and performance.\n");
                 libc_stats[i].secs = fsecs(eval_libc_speed, &speed_params);
             }
             free_trace(trace);
@@ -385,7 +398,7 @@ int main(int argc, char **argv) {
 
         /* Display the libc results in a compact table */
         if (verbose) {
-            printf("\nResults for libc malloc:\n");
+            PRINTF("\nResults for libc malloc:\n");
             printresults(num_tracefiles, libc_stats);
         }
     }
@@ -394,7 +407,7 @@ int main(int argc, char **argv) {
 	 * Always run and evaluate the student's mm package
 	 */
     if (verbose > 1)
-        printf("\nTesting mm malloc\n");
+        PRINTF("\nTesting mm malloc\n");
 
     /* Allocate the mm stats array, with one stats_t struct per tracefile */
     mm_stats = (stats_t *)calloc(num_tracefiles, sizeof(stats_t));
@@ -410,18 +423,18 @@ int main(int argc, char **argv) {
     /* Display the mm results in a compact table */
     if (verbose) {
         if (onetime_flag) {
-            printf("\ncorrectness check finished, by running tracefile \"%s\".", tracefiles[num_tracefiles - 1]);
+            PRINTF("\ncorrectness check finished, by running tracefile \"%s\".", tracefiles[num_tracefiles - 1]);
             if (mm_stats[num_tracefiles - 1].valid) {
-                printf(" => correct.\n\n");
+                PRINTF(" => correct.\n\n");
                 exit(0);
             } else {
-                printf(" => incorrect.\n\n");
+                PRINTF(" => incorrect.\n\n");
                 exit(1);
             }
         } else {
-            printf("\nResults for mm malloc:\n");
+            PRINTF("\nResults for mm malloc:\n");
             printresults(num_tracefiles, mm_stats);
-            printf("\n");
+            PRINTF("\n");
         }
     }
 
@@ -471,20 +484,22 @@ int main(int argc, char **argv) {
         }
 
         perfindex = (p1 + p2) * 100.0;
-        printf("Perf index = %.2f (util) + %.2f (thru) = %.2f/100\n",
+        PRINTF("Perf index = %.2f (util) + %.2f (thru) = %.2f/100\n",
                p1 * 100,
                p2 * 100,
                perfindex);
-        fprintf(stderr, "%.2f\n", perfindex);
+        if (only_output_perf_score) {
+            printf("%.2f\n", perfindex);
+        }
 
     } else { /* There were errors */
         perfindex = 0.0;
-        printf("Terminated with %d errors\n", errors);
+        PRINTF("Terminated with %d errors\n", errors);
     }
 
     if (autograder) {
-        printf("correct:%d\n", numcorrect);
-        printf("perfidx:%.0f\n", perfindex);
+        PRINTF("correct:%d\n", numcorrect);
+        PRINTF("perfidx:%.0f\n", perfindex);
     }
 
     /* Post result to Autolab */
@@ -680,7 +695,7 @@ static trace_t *read_trace(stats_t *stats, const char *tracedir,
     int op_index;
 
     if (verbose > 1)
-        printf("Reading tracefile: %s\n", filename);
+        PRINTF("Reading tracefile: %s\n", filename);
 
     /* Allocate the trace record */
     if ((trace = (trace_t *)malloc(sizeof(trace_t))) == NULL)
@@ -1175,11 +1190,11 @@ static void printresults(int n, stats_t *stats) {
     int sumweight = 0;
 
     /* Print the individual results for each trace */
-    printf("  %6s%6s %5s%8s %9s  %s\n",
+    PRINTF("  %6s%6s %5s%8s %9s  %s\n",
            "valid", "util", "ops", "secs", "Kops", "trace");
     for (i = 0; i < n; i++) {
         if (stats[i].valid) {
-            printf("%2s%4s %5.0f%%%8.0f%10.6f %6.0f %s\n",
+            PRINTF("%2s%4s %5.0f%%%8.0f%10.6f %6.0f %s\n",
                    stats[i].weight != 0 ? "*" : "",
                    "yes",
                    stats[i].util * 100.0,
@@ -1192,7 +1207,7 @@ static void printresults(int n, stats_t *stats) {
             sumops += stats[i].ops * stats[i].weight;
             sumutil += stats[i].util * stats[i].weight;
         } else {
-            printf("%2s%4s %6s%8s%9s%6s %s\n",
+            PRINTF("%2s%4s %6s%8s%9s%6s %s\n",
                    stats[i].weight != 0 ? "*" : "",
                    "no",
                    "-",
@@ -1208,14 +1223,14 @@ static void printresults(int n, stats_t *stats) {
         if (sumweight == 0)
             sumweight = 1;
 
-        printf("%2d     %5.2f%%%8.0f%10.6f %6.0f\n",
+        PRINTF("%2d     %5.2f%%%8.0f%10.6f %6.0f\n",
                sumweight,
                (sumutil / (double)sumweight) * 100.0,
                sumops,
                sumsecs,
                (sumsecs == 0.0) ? 0 : (sumops / 1e3) / sumsecs);
     } else {
-        printf("       %8s%10s%6s\n",
+        PRINTF("       %8s%10s%6s\n",
                "-",
                "-",
                "-");
@@ -1240,7 +1255,7 @@ void unix_error(const char *fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
     vprintf(fmt, ap);
-    printf(": %s\n", strerror(errno));
+    PRINTF(": %s\n", strerror(errno));
     va_end(ap);
     exit(1);
 }
@@ -1254,7 +1269,7 @@ void malloc_error(const trace_t *trace, int opnum, const char *fmt, ...) {
 
     errors++;
 
-    printf("ERROR [trace %s, line %d]: ", trace->filename, LINENUM(opnum));
+    PRINTF("ERROR [trace %s, line %d]: ", trace->filename, LINENUM(opnum));
     vprintf(fmt, ap);
     putchar('\n');
 
@@ -1277,4 +1292,5 @@ static void usage(void) {
     fprintf(stderr, "\t-v <i>     Set Verbosity Level to <i>\n");
     fprintf(stderr, "\t-s <s>     Timeout after s secs (default no timeout)\n");
     fprintf(stderr, "\t-f <file>  Use <file> as the trace file.\n");
+    fprintf(stderr, "\t-P         Only output perf score.\n");
 }
