@@ -7,6 +7,7 @@
 | 实验 | 目录 |
 | --- | --- |
 | shell lab | [shell](./shell) |
+| malloc lab | [malloc](./malloc) |
 
 ## 实验文档
 * [文档源码](https://github.com/SEU-ICS/docs)
