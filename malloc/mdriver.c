@@ -413,8 +413,10 @@ int main(int argc, char **argv) {
             printf("\ncorrectness check finished, by running tracefile \"%s\".", tracefiles[num_tracefiles - 1]);
             if (mm_stats[num_tracefiles - 1].valid) {
                 printf(" => correct.\n\n");
+                exit(0);
             } else {
                 printf(" => incorrect.\n\n");
+                exit(1);
             }
         } else {
             printf("\nResults for mm malloc:\n");
@@ -473,6 +475,7 @@ int main(int argc, char **argv) {
                p1 * 100,
                p2 * 100,
                perfindex);
+        fprintf(stderr, "%.2f\n", perfindex);
 
     } else { /* There were errors */
         perfindex = 0.0;
