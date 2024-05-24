@@ -145,13 +145,22 @@ bool mm_checkheap(int lineno) {
     return (bool)lineno;
 }
 
-/* Extend the heap by `words` bytes. Return a pointer to the new free block. */
-// HINT: MAKE SURE THE SIZE OF THE HEAP IS PROPERLY ALIGNED
+/* 
+ * extend_heap
+ * Extend the heap by `words` words. Return a pointer to the new free block on
+ * success. Otherwise return NULL.
+*/
+// HINT: Make sure the heap size is properly aligned. Don't forget to coalesce
+// free blocks.
 static void *extend_heap(size_t words) {
 // Your code here
 
 }
 
+/*
+ * coalesce
+ * Merge two adjacent free memory chunks, return the merged block.
+*/
 static void *coalesce(void *bp) {
 
     size_t prev_alloc = GET_ALLOC(FTRP(PREV_BLKP(bp)));
